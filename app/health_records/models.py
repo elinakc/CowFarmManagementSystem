@@ -3,7 +3,7 @@ from app.animal_records.models import AnimalRecords
 # Create your models here.
 class HealthRecord(models.Model):
   cow =models.ForeignKey(AnimalRecords, on_delete=models.CASCADE, related_name='health_records')
-  health_condtion =models.CharField(max_length=255, choices=[
+  health_condition =models.CharField(max_length=255, choices=[
     ('healthy','Healthy'),
     ('sick','Sick'),
     ('undertreatment','Undertreatment'),

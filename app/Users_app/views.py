@@ -50,7 +50,7 @@ class loginView(APIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     @swagger_auto_schema( responses={200: openapi.Response('Logout Successful')} )
 
     def post(self, request):

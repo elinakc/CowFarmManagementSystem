@@ -4,44 +4,60 @@ from rest_framework import status
 from .models import MilkRecord
 from .serializers import MilkRecordSerializer
 from rest_framework.views import APIView
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import  permissions, status
+import logging
+from .serializers import CowDropdownSerializer
+from app.animal_records.models import AnimalRecords
+from rest_framework import generics
 
 
+logger = logging.getLogger(__name__)
+
+class CowListView(generics.ListAPIView):
+    queryset = AnimalRecords.objects.all()
+    serializer_class =CowDropdownSerializer
+    
 class MilkRecordListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
-    @swagger_auto_schema(
-        operation_summary="List all milk records",
-        responses={200: MilkRecordSerializer(many=True)}
-    )
     
     def get(self, request):
-        "List all milk records"
-        milk_records = MilkRecord.objects.all()
-        serializer = MilkRecordSerializer(milk_records, many=True)
-        return Response(serializer.data)
-    
-    @swagger_auto_schema(
-        operation_summary="Create a new milk record",
-        request_body=MilkRecordSerializer,
-        responses={201: MilkRecordSerializer}
-    )
+        """Get all milk records"""
+        try:
+            milk_records = MilkRecord.objects.all().order_by('-milking_date')
+            serializer = MilkRecordSerializer(milk_records, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error fetching milk records: {str(e)}")
+            return Response(
+                {"error": "Failed to fetch milk records"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
     def post(self, request):
-        "Create a new milk record"
-        serializer = MilkRecordSerializer(data=request.data)
+        """Create a new milk record"""
+        logger.info(f"Received data: {request.data}")
+        
+        # Convert empty strings to None for number fields
+        data = request.data.copy()
+        number_fields = ['morningMilkQuantity', 'afternoonMilkQuantity', 'eveningMilkQuantity']
+        for field in number_fields:
+            if field in data and data[field] == '':
+                data[field] = None
+
+        serializer = MilkRecordSerializer(data=data)
         if serializer.is_valid():
+            logger.info("Data is valid")
             serializer.save()
+            logger.info("Data saved successfully")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            logger.error(f"Validation errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MilkRecordDetailView(APIView):
    
-    @swagger_auto_schema(
-        operation_summary="Retrieve a specific milk record",
-        responses={200: MilkRecordSerializer, 404: "Milk record not found"}
-    )
    
     def get_object(self, pk):
         try:
@@ -58,11 +74,7 @@ class MilkRecordDetailView(APIView):
         return Response(
             {"error": "Milk record not found"}, status=status.HTTP_404_NOT_FOUND
         )
-    @swagger_auto_schema(
-        operation_summary="Update a specific milk record",
-        request_body=MilkRecordSerializer,
-        responses={200: MilkRecordSerializer, 404: "Milk record not found"}
-    )
+  
 
     def put(self, request, pk):
         """Update a specific milk record"""
@@ -78,10 +90,7 @@ class MilkRecordDetailView(APIView):
         return Response(
             {"error": "Milk record not found"}, status=status.HTTP_404_NOT_FOUND
         )
-    @swagger_auto_schema(
-        operation_summary="Delete a specific milk record",
-        responses={204: "Milk record deleted successfully", 404: "Milk record not found"}
-    )
+
     def delete(self, request, pk):
         """Delete a specific milk record"""
         milk_record = self.get_object(pk)

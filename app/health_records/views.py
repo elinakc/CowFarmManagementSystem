@@ -1,12 +1,16 @@
 from django.shortcuts import render
 from .models import HealthRecord
-from .serializers import HealthRecordSerializer
+from .serializers import HealthRecordSerializer, CowDropdownSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+from rest_framework import generics
+from app.animal_records.models import AnimalRecords
 
+
+class CowListView(generics.ListAPIView):
+    queryset = AnimalRecords.objects.all()
+    serializer_class =CowDropdownSerializer
 # Create your views here.
 class HealthRecordListCreateView(APIView):
   
@@ -15,13 +19,7 @@ class HealthRecordListCreateView(APIView):
         serializers = HealthRecordSerializer(health_records, many=True)
         return Response(serializers.data)
       
-  @swagger_auto_schema(
-        request_body=HealthRecordSerializer,
-        responses={
-            201: HealthRecordSerializer,
-            400: openapi.Response("Bad Request"),
-        },
-    )
+  
   def post(self, request):
         serializer = HealthRecordSerializer(data=request.data)
         if serializer.is_valid():
@@ -31,12 +29,7 @@ class HealthRecordListCreateView(APIView):
 
 
 class HealthRecordDetailView(APIView):
-  @swagger_auto_schema(
-        responses={
-            200: HealthRecordSerializer,
-            404: openapi.Response("Animal not found"),
-        },
-    )
+ 
   def get_object(self, pk):
         try:
             return HealthRecord.objects.get(pk=pk)

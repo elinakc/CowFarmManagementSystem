@@ -24,7 +24,7 @@ class AnimalAnalyticsService:
             'total_animals': total_animals,
             'breed_distribution': list(breed_stats),
             'top_performing_breed': breed_stats.order_by('-avg_milk_yield').first()
-        }
+         }
 
     @staticmethod
     def get_milk_production_analytics():
