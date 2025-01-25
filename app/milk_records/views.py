@@ -9,16 +9,21 @@ import logging
 from .serializers import CowDropdownSerializer
 from app.animal_records.models import AnimalRecords
 from rest_framework import generics
+from app.Users_app.permissions import role_required, IsAdmin, IsManager
 
 
 logger = logging.getLogger(__name__)
 
+@role_required(['admin','manager']) 
 class CowListView(generics.ListAPIView):
+    # permission_classes = [IsAdmin | IsManager]    
     queryset = AnimalRecords.objects.all()
     serializer_class =CowDropdownSerializer
-    
+
+
 class MilkRecordListCreateView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdmin | IsManager]
+    @role_required(['admin','manager']) 
     
     def get(self, request):
         """Get all milk records"""
@@ -32,8 +37,9 @@ class MilkRecordListCreateView(APIView):
                 {"error": "Failed to fetch milk records"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
+            
+    
+    @role_required(['admin','manager']) 
     def post(self, request):
         """Create a new milk record"""
         logger.info(f"Received data: {request.data}")
@@ -44,6 +50,18 @@ class MilkRecordListCreateView(APIView):
         for field in number_fields:
             if field in data and data[field] == '':
                 data[field] = None
+
+        # Check if a record for the same cow and date already exists
+        existing_record = MilkRecord.objects.filter(
+            cow_id=data.get('cow'),
+            milking_date=data.get('milking_date')
+        ).exists()
+
+        if existing_record:
+            return Response(
+                {"error": "A milk record for this cow on this date already exists"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         serializer = MilkRecordSerializer(data=data)
         if serializer.is_valid():
@@ -57,6 +75,8 @@ class MilkRecordListCreateView(APIView):
 
 
 class MilkRecordDetailView(APIView):
+    permission_classes = [IsAdmin | IsManager]
+    @role_required(['admin','manager']) 
    
    
     def get_object(self, pk):
@@ -64,10 +84,12 @@ class MilkRecordDetailView(APIView):
             return MilkRecord.objects.get(pk=pk)
         except MilkRecord.DoesNotExist:
             return None
-
+        
+    
+    @role_required(['admin','manager']) 
     def get(self, request, pk):
         """Retrieve a specific milk record"""
-        milk_record = self.get_object(pk)
+        milk_record = self.get_object(pk=pk)
         if milk_record:
             serializer = MilkRecordSerializer(milk_record)
             return Response(serializer.data)
@@ -75,10 +97,11 @@ class MilkRecordDetailView(APIView):
             {"error": "Milk record not found"}, status=status.HTTP_404_NOT_FOUND
         )
   
-
+    
+    @role_required(['admin','manager'])  
     def put(self, request, pk):
         """Update a specific milk record"""
-        milk_record = self.get_object(pk)
+        milk_record = self.get_object(pk=pk)
         if milk_record:
             serializer = MilkRecordSerializer(
                 milk_record, data=request.data, partial=True
@@ -90,10 +113,12 @@ class MilkRecordDetailView(APIView):
         return Response(
             {"error": "Milk record not found"}, status=status.HTTP_404_NOT_FOUND
         )
-
+        
+   
+    @role_required(['admin','manager']) 
     def delete(self, request, pk):
         """Delete a specific milk record"""
-        milk_record = self.get_object(pk)
+        milk_record = self.get_object(pk=pk)
         if milk_record:
             milk_record.delete()
             return Response(

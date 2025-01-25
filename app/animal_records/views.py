@@ -4,20 +4,28 @@ from .serializers import AnimalRecordsSerializer
 from .models import AnimalRecords
 from rest_framework.views import APIView
 from rest_framework import status
+from app.Users_app.permissions import role_required, IsAdmin
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 import logging
 
 logger = logging.getLogger(__name__)
 
+
 class AnimalListCreateView(APIView):
-  
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdmin]
+    
+    @role_required(['admin'])
     def get(self, request):
         """List all animals"""
         animal = AnimalRecords.objects.all()
         serializers = AnimalRecordsSerializer(animal, many=True)
         return Response(serializers.data)
-
+    
+    @role_required(['admin'])
     def post(self, request):
         """Create a new animal record"""
         logger.info(f"Received data: {request.data}")
@@ -37,8 +45,12 @@ class AnimalListCreateView(APIView):
         
         logger.error(f"Validation errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class AnimalDetailView(APIView):
+    permission_classes =[IsAdmin]
+    @role_required(['admin'])
+ 
     
     def get_object(self, pk):
         try:
@@ -46,7 +58,7 @@ class AnimalDetailView(APIView):
         except AnimalRecords.DoesNotExist:
             return None
 
-  
+    @role_required(['admin'])
     def get(self, request, pk):
         animal = self.get_object(pk)
         if animal:
@@ -54,7 +66,7 @@ class AnimalDetailView(APIView):
             return Response(serializer.data)
         return Response({"error": "Animal not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+    @role_required(['admin'])
     def put(self, request, pk):
         animal = self.get_object(pk)
         if animal:
@@ -66,7 +78,8 @@ class AnimalDetailView(APIView):
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response({"error": "Animal not found"}, status=status.HTTP_404_NOT_FOUND)
-
+    
+    @role_required(['admin'])
     def patch(self, request, pk):
         animal = self.get_object(pk)
         if animal:
@@ -79,7 +92,7 @@ class AnimalDetailView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response({"error": "Animal not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+    @role_required(['admin'])
     def delete(self, request, pk):
         animal = self.get_object(pk)
         if animal:

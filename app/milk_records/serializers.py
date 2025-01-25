@@ -10,7 +10,7 @@ class CowDropdownSerializer(serializers.ModelSerializer):
 class MilkRecordSerializer(serializers.ModelSerializer):
   class Meta:
     model = MilkRecord
-    fields =['cow', 'milking_date', 'morning_milk_quantity','afternoon_milk_quantity','evening_milk_quantity']
+    fields =['id','cow', 'milking_date', 'morning_milk_quantity','afternoon_milk_quantity','evening_milk_quantity']
     extra_fields = ['total_milk_quantity']  # Add dynamic field
     
   def get_cow_options(self, obj):
