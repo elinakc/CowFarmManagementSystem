@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import FarmAnalyticsViewSet 
-# milk_production_stats, predict_milk_production,cluster_performance,advanced_analytics
+# from .metrics import milk_production_stats, predict_milk_production,cluster_performance,advanced_analytics
 
 
 router = DefaultRouter()
@@ -9,8 +9,8 @@ router.register(r'analytics', FarmAnalyticsViewSet, basename='analytics')
 
 urlpatterns = [
     path('', include(router.urls)),
-    #  # Statistical Analytics endpoints
-    # path('stats/milk-production/', views.milk_production_stats, name='milk_production_stats'),
+     # Statistical Analytics endpoints
+    # path('stats/milk-production/', metrics.milk_production_stats, name='milk_production_stats'),
     
     # # Predictive Analytics endpoints
     # path('predict/milk-production/', views.predict_milk_production, name='predict_milk_production'),

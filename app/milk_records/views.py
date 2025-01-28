@@ -2,28 +2,32 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework import status
 from .models import MilkRecord
-from .serializers import MilkRecordSerializer
+from .serializers import MilkRecordSerializer, MonthlyMilkYieldSerializer,ProfitLossSerializer
 from rest_framework.views import APIView
-from rest_framework import  permissions, status
 import logging
 from .serializers import CowDropdownSerializer
 from app.animal_records.models import AnimalRecords
 from rest_framework import generics
 from app.Users_app.permissions import role_required, IsAdmin, IsManager
+from django.db.models import Sum, F, Count, ExpressionWrapper, DecimalField
+from django.db.models.functions import TruncMonth
+from rest_framework.permissions import AllowAny
+from django.utils.timezone import make_aware
+from datetime import datetime, date
 
 
 logger = logging.getLogger(__name__)
 
-@role_required(['admin','manager']) 
+# @role_required(['admin','manager']) 
 class CowListView(generics.ListAPIView):
-    # permission_classes = [IsAdmin | IsManager]    
+    permission_classes = [AllowAny]    
     queryset = AnimalRecords.objects.all()
     serializer_class =CowDropdownSerializer
 
 
 class MilkRecordListCreateView(APIView):
-    permission_classes = [IsAdmin | IsManager]
-    @role_required(['admin','manager']) 
+    permission_classes = [AllowAny]
+    # @role_required(['admin','manager']) 
     
     def get(self, request):
         """Get all milk records"""
@@ -39,7 +43,7 @@ class MilkRecordListCreateView(APIView):
             )
             
     
-    @role_required(['admin','manager']) 
+    # @role_required(['admin','manager']) 
     def post(self, request):
         """Create a new milk record"""
         logger.info(f"Received data: {request.data}")
@@ -75,8 +79,8 @@ class MilkRecordListCreateView(APIView):
 
 
 class MilkRecordDetailView(APIView):
-    permission_classes = [IsAdmin | IsManager]
-    @role_required(['admin','manager']) 
+    permission_classes = [AllowAny]
+    # @role_required(['admin','manager']) 
    
    
     def get_object(self, pk):
@@ -86,7 +90,7 @@ class MilkRecordDetailView(APIView):
             return None
         
     
-    @role_required(['admin','manager']) 
+    # @role_required(['admin','manager']) 
     def get(self, request, pk):
         """Retrieve a specific milk record"""
         milk_record = self.get_object(pk=pk)
@@ -98,7 +102,7 @@ class MilkRecordDetailView(APIView):
         )
   
     
-    @role_required(['admin','manager'])  
+    # @role_required(['admin','manager'])  
     def put(self, request, pk):
         """Update a specific milk record"""
         milk_record = self.get_object(pk=pk)
@@ -115,7 +119,7 @@ class MilkRecordDetailView(APIView):
         )
         
    
-    @role_required(['admin','manager']) 
+    # @role_required(['admin','manager']) 
     def delete(self, request, pk):
         """Delete a specific milk record"""
         milk_record = self.get_object(pk=pk)
@@ -128,3 +132,77 @@ class MilkRecordDetailView(APIView):
         return Response(
             {"error": "Milk record not found"}, status=status.HTTP_404_NOT_FOUND
         )
+        
+class MonthlyMilkYieldView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        monthly_yields = MilkRecord.objects.annotate(
+            month=TruncMonth('milking_date')
+        ).values('month').annotate(
+            total_morning_milk=Sum('morning_milk_quantity'),
+            total_afternoon_milk=Sum('afternoon_milk_quantity'),
+            total_evening_milk=Sum('evening_milk_quantity'),
+            total_daily_milk=Sum('morning_milk_quantity') + 
+                              Sum('afternoon_milk_quantity') + 
+                              Sum('evening_milk_quantity')
+        ).order_by('-month')
+        for record in monthly_yields:
+            if isinstance(record['month'], datetime):
+                # If it's already a datetime, just make it timezone aware
+                record['month'] = make_aware(record['month'])
+            elif isinstance(record['month'], date):
+                # If it's a date object, convert to datetime first
+                record['month'] = make_aware(datetime.combine(record['month'], datetime.min.time()))
+                
+        serializer = MonthlyMilkYieldSerializer(monthly_yields, many=True)
+        return Response(serializer.data)
+    
+class ProfitLossCalculationView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Calculate monthly profit/loss based on milk yield"""
+        # Assuming following cost/revenue parameters (you should adjust these)
+        MILK_PRICE_PER_LITER = 50  # Price per liter of milk
+        FEED_COST_PER_COW_PER_MONTH = 5000  # Monthly feed cost per cow
+        MAINTENANCE_COST_PER_COW_PER_MONTH = 2000  # Monthly maintenance cost per cow
+        
+        # Get monthly milk yields
+        monthly_yields = MilkRecord.objects.annotate(
+            month=TruncMonth('milking_date')
+        ).values('month').annotate(
+            total_monthly_milk=Sum(
+                F('morning_milk_quantity') + 
+                F('afternoon_milk_quantity') + 
+                F('evening_milk_quantity')
+            ),
+            total_cows=Count('cow', distinct=True)
+        ).order_by('-month')
+        for record in monthly_yields:
+            if isinstance(record['month'], datetime):
+                # If it's already a datetime, just make it timezone aware
+                record['month'] = make_aware(record['month'])
+            elif isinstance(record['month'], date):
+                # If it's a date object, convert to datetime first
+                record['month'] = make_aware(datetime.combine(record['month'], datetime.min.time()))
+        
+        profit_loss_data = []
+        for monthly_data in monthly_yields:
+            total_milk_revenue = monthly_data['total_monthly_milk'] * MILK_PRICE_PER_LITER
+            total_feed_cost = monthly_data['total_cows'] * FEED_COST_PER_COW_PER_MONTH
+            total_maintenance_cost = monthly_data['total_cows'] * MAINTENANCE_COST_PER_COW_PER_MONTH
+            
+            profit_loss = total_milk_revenue - total_feed_cost - total_maintenance_cost
+            
+            profit_loss_data.append({
+                'month': monthly_data['month'],
+                'total_milk_quantity': monthly_data['total_monthly_milk'],
+                'total_milk_revenue': total_milk_revenue,
+                'total_feed_cost': total_feed_cost,
+                'total_maintenance_cost': total_maintenance_cost,
+                'net_profit_loss': profit_loss
+            })
+        
+        serializer = ProfitLossSerializer(profit_loss_data, many=True)
+        return Response(serializer.data)

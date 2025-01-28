@@ -5,7 +5,7 @@ from app.animal_records.models import AnimalRecords
 class CowDropdownSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnimalRecords
-        fields = ['id','name'] 
+        fields = ['id','cow_name'] 
 
 class HealthRecordSerializer(serializers.ModelSerializer):
   class Meta:

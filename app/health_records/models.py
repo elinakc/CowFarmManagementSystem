@@ -23,6 +23,6 @@ class HealthRecord(models.Model):
   updated_at =models.DateTimeField(auto_now=True)
   
   def __str__(self):
-    return f"Health Record for {self.cow.name}"
+    return f"Health Record for {self.cow.cow_name}"
   
   

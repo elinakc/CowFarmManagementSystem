@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import CustomUser
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-
+import re
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
@@ -35,6 +35,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             address=validated_data.get('address', ''),
         )
         return user
+    # def validate_email(self, value):
+    #     # Define the regex pattern
+    #     pattern = r'^[a-zA-Z]+(?:[a-zA-Z]*manager|[a-zA-Z]*admin|[a-zA-Z]*vet)?@gmail\.com$'
+    #     if not re.match(pattern, value):
+    #         raise serializers.ValidationError("Please enter a valid email address.")
+    #     return value
     
 
 

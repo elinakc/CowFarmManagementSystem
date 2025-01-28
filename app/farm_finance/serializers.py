@@ -13,20 +13,3 @@ class ExpenseSerializer(serializers.ModelSerializer):
         fields = [ 'date', 'expense_type',  'amount']
         
         
-# class MonthlyFinanceSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = MonthlyFinance
-#         fields = '__all__'
-
-
-# class QuarterlyFinanceSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = QuarterlyFinance
-#         fields = '__all__'
-
-
-# class AnnualFinanceSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = AnnualFinance
-#         fields = '__all__'      
-       

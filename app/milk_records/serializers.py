@@ -5,7 +5,7 @@ from rest_framework import serializers
 class CowDropdownSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnimalRecords
-        fields = ['id','name'] 
+        fields = ['id','cow_name'] 
   
 class MilkRecordSerializer(serializers.ModelSerializer):
   class Meta:
@@ -25,3 +25,22 @@ class MilkRecordSerializer(serializers.ModelSerializer):
               obj.afternoon_milk_quantity +
               obj.evening_milk_quantity
           )
+        
+
+class MonthlyMilkYieldSerializer(serializers.Serializer):
+    
+    month = serializers.DateTimeField()
+    total_morning_milk = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_afternoon_milk = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_evening_milk = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_daily_milk = serializers.DecimalField(max_digits=10, decimal_places=2)
+    
+  
+
+class ProfitLossSerializer(serializers.Serializer):
+    month = serializers.DateTimeField()
+    total_milk_quantity = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_milk_revenue = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_feed_cost = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_maintenance_cost = serializers.DecimalField(max_digits=10, decimal_places=2)
+    net_profit_loss = serializers.DecimalField(max_digits=10, decimal_places=2)

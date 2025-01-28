@@ -7,15 +7,18 @@ from datetime import datetime, timedelta
 from .models import Income, Expense
 from .serializers import IncomeSerializer, ExpenseSerializer
 from app.Users_app.permissions import IsAdmin, IsManager, role_required
+from rest_framework.permissions import AllowAny
 
 class IncomeListCreateAPIView(generics.ListCreateAPIView):
-    permission_classes = [IsAdmin | IsManager]
+    # permission_classes = [IsAdmin | IsManager]
+    permission_classes =[AllowAny]
     queryset = Income.objects.all().order_by('-date')
     serializer_class = IncomeSerializer
 
    
 class ExpenseListCreateAPIView(generics.ListCreateAPIView):
-    permission_classes = [IsAdmin | IsManager]
+    permission_classes =[AllowAny]
+    # permission_classes = [IsAdmin | IsManager]
     queryset = Expense.objects.all().order_by('-date')
     serializer_class = ExpenseSerializer
 
@@ -23,8 +26,9 @@ class ExpenseListCreateAPIView(generics.ListCreateAPIView):
         
 
 class FarmFinanceSummaryView(APIView):
-    permission_classes = [IsAdmin | IsManager]
-    @role_required(['admin','manager']) 
+    permission_classes =[AllowAny]
+    # permission_classes = [IsAdmin | IsManager]
+    # @role_required(['admin','manager']) 
     
     def get(self, request):
         # Get total income
@@ -49,8 +53,9 @@ class FarmFinanceSummaryView(APIView):
         })
 
 class ProfitLossView(APIView):
-    permission_classes = [IsAdmin | IsManager]
-    @role_required(['admin','manager']) 
+    permission_classes =[AllowAny]
+    # permission_classes = [IsAdmin | IsManager]
+    # @role_required(['admin','manager']) 
     
     def get(self, request):
         # Get date range from query parameters or use default (last 30 days)
@@ -95,15 +100,15 @@ class ProfitLossView(APIView):
             'netProfit': net_profit
         })
 
-@role_required(['admin','manager']) 
+# @role_required(['admin','manager']) 
 class IncomeDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAdmin | IsManager]
+    # permission_classes = [IsAdmin | IsManager]
     queryset = Income.objects.all()
     serializer_class = IncomeSerializer
 
-@role_required(['admin','manager']) 
+# @role_required(['admin','manager']) 
 class ExpenseDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAdmin | IsManager]
+    # permission_classes = [IsAdmin | IsManager]
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer
 

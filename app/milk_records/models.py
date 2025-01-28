@@ -22,6 +22,6 @@ class MilkRecord(models.Model):
     return self.morning_milk_quantity + self.afternoon_milk_quantity + self.evening_milk_quantity
   
   def __str__(self):
-    return f"Milk Record for {self.cow.name or self.cow_id} on {self.milking_date}"
+    return f"Milk Record for {self.cow.cow_name or self.cow_id} on {self.milking_date}"
   
     
