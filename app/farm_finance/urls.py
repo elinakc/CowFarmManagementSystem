@@ -3,6 +3,8 @@ from .views import (
     IncomeListCreateAPIView,
     ExpenseListCreateAPIView,
     FarmFinanceSummaryView,
+    EnhancedFinancialSummaryView
+    
     # ProfitLossView, 
     # MonthlyFinanceView, 
     # QuarterlyFinanceView, 
@@ -13,7 +15,9 @@ urlpatterns = [
     path('incomes/', IncomeListCreateAPIView.as_view(), name='income-list-create'),
     path('expenses/', ExpenseListCreateAPIView.as_view(), name='expense-list-create'),
     path('finance-summary/', FarmFinanceSummaryView.as_view(), name='finance-summary'),
-    path('profitloss/', FarmFinanceSummaryView.as_view(), name='profit-loss'),
+   
+    path('enhancedfinance-summary/', EnhancedFinancialSummaryView.as_view(), name='profit-loss'),
+    
     # path('monthly-finance/', MonthlyFinanceView.as_view(), name='monthly-finance'),
     # path('quarterly-finance/', QuarterlyFinanceView.as_view(), name='quarterly-finance'),
     # path('annual-finance/', AnnualFinanceView.as_view(), name='annual-finance'),

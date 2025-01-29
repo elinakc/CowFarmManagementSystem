@@ -51,7 +51,7 @@ class AnimalListCreateView(APIView):
 class AnimalDetailView(APIView):
     # permission_classes = [AllowAny]
     
-    permission_classes =[IsAdmin]
+    permission_classes =[AllowAny]
     # @role_required(['admin'])
  
     

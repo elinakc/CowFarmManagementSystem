@@ -50,55 +50,146 @@ class FarmFinanceSummaryView(APIView):
             'totalExpenses': total_expenses,
             'netProfit': net_profit,
             'cashBalance': cash_balance
+            
         })
-
-class ProfitLossView(APIView):
-    permission_classes =[AllowAny]
-    # permission_classes = [IsAdmin | IsManager]
-    # @role_required(['admin','manager']) 
+        
+class EnhancedFinancialSummaryView(APIView):
+    permission_classes = [AllowAny]
     
     def get(self, request):
-        # Get date range from query parameters or use default (last 30 days)
-        end_date = request.query_params.get('end_date', timezone.now().date())
-        if isinstance(end_date, str):
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-       
-        start_date = request.query_params.get('start_date', end_date - timedelta(days=30))
-        if isinstance(start_date, str):
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-
-
-        # Get income breakdown by type
-        income_by_type = Income.objects.filter(
-            date__range=[start_date, end_date]
+        # Get current date and date ranges
+        current_date = timezone.now().date()
+        
+        # Current month range
+        current_month_start = current_date.replace(day=1)
+        if current_date.month == 12:
+            current_month_end = current_date.replace(year=current_date.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            current_month_end = current_date.replace(month=current_date.month + 1, day=1) - timedelta(days=1)
+            
+        # Previous month range
+        if current_date.month == 1:
+            prev_month_start = current_date.replace(year=current_date.year - 1, month=12, day=1)
+            prev_month_end = current_month_start - timedelta(days=1)
+        else:
+            prev_month_start = current_date.replace(month=current_date.month - 1, day=1)
+            prev_month_end = current_month_start - timedelta(days=1)
+            
+        # Year to date range
+        year_start = current_date.replace(month=1, day=1)
+        
+        # Get current month data
+        current_month_income = Income.objects.filter(
+            date__range=[current_month_start, current_month_end]
         ).values('income_type').annotate(
             total=Sum('amount')
         )
-
-
-        # Get expense breakdown by type
-        expense_by_type = Expense.objects.filter(
-            date__range=[start_date, end_date]
+        
+        current_month_expenses = Expense.objects.filter(
+            date__range=[current_month_start, current_month_end]
         ).values('expense_type').annotate(
             total=Sum('amount')
         )
-
-
+        
+        # Get previous month data
+        prev_month_income = Income.objects.filter(
+            date__range=[prev_month_start, prev_month_end]
+        ).values('income_type').annotate(
+            total=Sum('amount')
+        )
+        
+        prev_month_expenses = Expense.objects.filter(
+            date__range=[prev_month_start, prev_month_end]
+        ).values('expense_type').annotate(
+            total=Sum('amount')
+        )
+        
+        # Get year-to-date data
+        ytd_income = Income.objects.filter(
+            date__range=[year_start, current_date]
+        ).values('income_type').annotate(
+            total=Sum('amount')
+        )
+        
+        ytd_expenses = Expense.objects.filter(
+            date__range=[year_start, current_date]
+        ).values('expense_type').annotate(
+            total=Sum('amount')
+        )
+        
         # Calculate totals
-        total_income = sum(item['total'] for item in income_by_type)
-        total_expenses = sum(item['total'] for item in expense_by_type)
-        net_profit = total_income - total_expenses
+        current_total_income = sum(item['total'] for item in current_month_income)
+        current_total_expenses = sum(item['total'] for item in current_month_expenses)
+        prev_total_income = sum(item['total'] for item in prev_month_income)
+        prev_total_expenses = sum(item['total'] for item in prev_month_expenses)
+        ytd_total_income = sum(item['total'] for item in ytd_income)
+        ytd_total_expenses = sum(item['total'] for item in ytd_expenses)
+        
+        # Calculate profit/loss
+        current_profit_loss = current_total_income - current_total_expenses
+        prev_profit_loss = prev_total_income - prev_total_expenses
+        ytd_profit_loss = ytd_total_income - ytd_total_expenses
+        
+        # Calculate daily averages
+        days_in_month = (current_month_end - current_month_start).days + 1
+        daily_avg_income = current_total_income / days_in_month if days_in_month > 0 else 0
+        daily_avg_expenses = current_total_expenses / days_in_month if days_in_month > 0 else 0
+        
+        # Calculate percentage breakdowns
+        def calculate_percentages(items, total):
+            return [
+                {**item, 'percentage': round((item['total'] / total * 100), 2)}
+                for item in items
+            ] if total > 0 else items
 
-
+        income_with_percentages = calculate_percentages(list(current_month_income), current_total_income)
+        expenses_with_percentages = calculate_percentages(list(current_month_expenses), current_total_expenses)
+        
+        # Calculate month-over-month changes
+        income_change = round(((current_total_income - prev_total_income) / prev_total_income * 100), 2) if prev_total_income > 0 else 0
+        expense_change = round(((current_total_expenses - prev_total_expenses) / prev_total_expenses * 100), 2) if prev_total_expenses > 0 else 0
+        profit_change = round(((current_profit_loss - prev_profit_loss) / abs(prev_profit_loss) * 100), 2) if prev_profit_loss != 0 else 0
+        
         return Response({
-            'startDate': start_date,
-            'endDate': end_date,
-            'incomeBreakdown': income_by_type,
-            'expenseBreakdown': expense_by_type,
-            'totalIncome': total_income,
-            'totalExpenses': total_expenses,
-            'netProfit': net_profit
+            'current_month': {
+                'month': current_date.strftime('%B %Y'),
+                'income': {
+                    'breakdown': income_with_percentages,
+                    'total': current_total_income,
+                    'daily_average': round(daily_avg_income, 2)
+                },
+                'expenses': {
+                    'breakdown': expenses_with_percentages,
+                    'total': current_total_expenses,
+                    'daily_average': round(daily_avg_expenses, 2)
+                },
+                'net_profit_loss': current_profit_loss,
+                'status': 'Profit' if current_profit_loss >= 0 else 'Loss'
+            },
+            'comparison_with_previous_month': {
+                'income_change_percentage': income_change,
+                'expense_change_percentage': expense_change,
+                'profit_loss_change_percentage': profit_change,
+                'previous_month_totals': {
+                    'income': prev_total_income,
+                    'expenses': prev_total_expenses,
+                    'profit_loss': prev_profit_loss
+                }
+            },
+            'year_to_date': {
+                'total_income': ytd_total_income,
+                'total_expenses': ytd_total_expenses,
+                'net_profit_loss': ytd_profit_loss,
+                'income_breakdown': list(ytd_income),
+                'expense_breakdown': list(ytd_expenses)
+            },
+            'summary_metrics': {
+                'profit_margin': round((current_profit_loss / current_total_income * 100), 2) if current_total_income > 0 else 0,
+                'expense_ratio': round((current_total_expenses / current_total_income * 100), 2) if current_total_income > 0 else 0
+            }
         })
+
+
 
 # @role_required(['admin','manager']) 
 class IncomeDetailView(generics.RetrieveUpdateDestroyAPIView):
