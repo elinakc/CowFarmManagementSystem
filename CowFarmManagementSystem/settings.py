@@ -102,10 +102,15 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'cowfarmdb',
-        'USER':'root',
-        'PASSWORD':'password',
-        'HOST':'localhost',
-        'PORT':'3309'
+        'USER': 'root',
+        'PASSWORD': 'password',
+        'HOST': 'localhost',
+        'PORT': '3309',
+        'OPTIONS': {
+            'connect_timeout': 60,  # Increase timeout for connecting
+            'charset': 'utf8mb4',  # Ensure correct encoding
+        },
+        'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
     }
 }
 

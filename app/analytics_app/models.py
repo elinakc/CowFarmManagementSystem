@@ -1,12 +1,10 @@
 from django.db import models
+from app.animal_records.models import AnimalRecords
 
-class AnalyticsReport(models.Model):
-    generated_date = models.DateTimeField(auto_now_add=True)
-    report_type = models.CharField(max_length=50)  # 'breed_stats', 'milk_stats', etc.
-    data = models.JSONField()
+class MilkYieldPrediction(models.Model):
+    cow = models.ForeignKey(AnimalRecords, on_delete=models.CASCADE)
+    predicted_yield = models.FloatField()
+    prediction_date = models.DateField(auto_now_add=True)
 
-    class Meta:
-        indexes = [
-            models.Index(fields=['generated_date', 'report_type']),
-        ]
-        get_latest_by = 'generated_date'
+    def __str__(self):
+        return f"Prediction for {self.cow.cow_name} on {self.prediction_date}"

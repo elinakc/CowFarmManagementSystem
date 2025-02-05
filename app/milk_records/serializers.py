@@ -6,6 +6,9 @@ class CowDropdownSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnimalRecords
         fields = ['id','cow_name'] 
+    def __str__(self):
+        # Handle cases where cow_name might be None
+        return self.cow_name if self.cow_name is not None else "Unnamed Cow"
   
 class MilkRecordSerializer(serializers.ModelSerializer):
   class Meta:

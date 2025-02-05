@@ -5,7 +5,7 @@ from django.utils import timezone
 
 # Create your models here.
 class AnimalRecords(models.Model):
-  cow_name = models.CharField(max_length=255, blank=True, null=True)
+  cow_name = models.CharField(max_length=255,blank=False, null=False)
   breed = models.CharField(max_length=255)
   dob =models.DateField()
   date_of_arrival =models.DateField()
